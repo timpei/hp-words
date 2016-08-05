@@ -1,7 +1,7 @@
 import sys
 import epub
 import codecs
-import xml.etree.ElementTree as ET
+import xmltodict
 import json
 
 def extract_text(xmldata):
@@ -32,13 +32,14 @@ for item in book.opf.manifest.values():
 		continue
 
 	try:	
-		xmldata = ET.fromstring(data).getroot()
-		#chapters.append(xmldata.findall('p'))
-		# chapters.append(extract_text(xmldata))
+		xmldata = xmltodict.parse(data)
+		print xmldata
+		chapters.append(extract_text(xmldata))
+
 	except UnicodeDecodeError:
 		continue
 
-#chapters = chapters[3:]
+chapters = chapters[3:]
 out.write(json.dumps(chapters, indent=4))
 # for chapter_num, chapter in enumerate(chapters):
 # 	for para_num, para in enumerate(chapter):
