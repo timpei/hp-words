@@ -1,4 +1,7 @@
 venv
 text
+taggers
+tokenizers
 
+data.db
 .DS_Store
