@@ -1,11 +1,16 @@
 import sys
 import epub
 import codecs
-import xmltodict
 import json
+import xmltodict
 import nltk
 
 import sqlite3
+
+#TODO
+# lemmatization of words
+# lowercase of words
+
 
 # takes xml dictionary and get text arrays (paragraphs)
 def extract_text(xmldata):
@@ -22,7 +27,7 @@ def extract_text(xmldata):
 		elif 'span' in paragraph and '#text' in paragraph['span']:
 			text.append(paragraph['span']['#text'])
 
-	# some unicode symbols can be replaced by ascii characters
+	# some unicode symbols can be replaced by ascii-compatible characters
 	# this helps with the NLP later
 	text = [x.replace(u'\u00ad', '')	# word-wrap hyphens
 			 .replace(u'\u2019', "'")
@@ -41,10 +46,11 @@ c.execute('''
 		CREATE TABLE IF NOT EXISTS sentences
 		(
 		sentence_id INT,
-		sentence TEXT, 
+		sentence TEXT,
+		sentence_index INT,
+		paragraph INT, 
 		chapter INT, 
-		title TEXT, 
-		part_of_speech TEXT,
+		title TEXT,
 		PRIMARY KEY (sentence_id, title)
 		)
 	''')
@@ -86,19 +92,22 @@ for item in epub_manifest_items:
 		continue
 
 chapters = chapters[3:]
-
 tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
+
+sentence_count = 0
+word_count = 0
 for chapter_num, chapter in enumerate(chapters):
 	for para_num, para in enumerate(chapter):
 		for sentence_num, sentence in enumerate(tokenizer.tokenize(para)):
+			c.execute('INSERT INTO sentences VALUES (?, ?, ?, ?, ?, ?)', (sentence_count, sentence, sentence_num, para_num, chapter_num, title))
 			words = nltk.word_tokenize(sentence)
 			for word_num, word in enumerate(nltk.pos_tag(words)):
-				row = '|'.join([
-						word[0],
-						'%i' % word_num,
-						sentence,
-						'%i' % chapter_num,
-						title,
-						word[1]
-					])
+				c.execute('INSERT INTO words VALUES (?, ?, ?, ?, ?, ?, ?)', (word_count, word[0], word_num, sentence_count, chapter_num, title, word[1]))
+				word_count += 1
+			sentence_count += 1
+db_conn.commit()
+db_conn.close()
+
+
+
 
